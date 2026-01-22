@@ -61,21 +61,21 @@
   # };
   # https://nixos.wiki/wiki/FAQ/When_do_I_update_stateVersion
   systemd.user.tmpfiles.rules = [
-    "d ${config.home.homeDirectory}/.node_modules "
+    "d ${config.home.homeDirectory}/.npm_packages"
   ];
   home.file = {
     ".npmrc" = {
       enable = true;
       text = ''
-        prefix=~/.node_modules
+        prefix=~/.npm_packages
       '';
     };
     ".zlogin" = {
       enable = true;
       text = ''
         ulimit -c 4000000
-        if [ -d "''${HOME}/.node_modules" ]; then
-          PATH="''${HOME}/.node_modules/bin:''${PATH}"
+        if [ -d "''${HOME}/.npm_packages" ]; then
+          PATH="''${HOME}/.npm_packages/bin:''${PATH}"
         fi
       '';
     };

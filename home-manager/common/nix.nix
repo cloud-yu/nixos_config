@@ -23,5 +23,5 @@
       allowUnfree = true;
     };
   };
-#  submoduleSupport.externalPackageInstall = true;
+  #  submoduleSupport.externalPackageInstall = true;
 }

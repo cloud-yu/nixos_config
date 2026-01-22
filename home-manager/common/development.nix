@@ -5,6 +5,7 @@
     nix-inspect
     alejandra
     shellcheck
+    podman
     clang-tools
     devenv
     rustup

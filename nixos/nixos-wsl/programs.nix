@@ -20,7 +20,4 @@
     };
     flake = "${config.users.users.nixos.home}/nixos-config";
   };
-
-  services.timesyncd.enable = true;
-  service.chrony.enable = false;
 }
