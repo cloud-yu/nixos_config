@@ -1,0 +1,348 @@
+diff --git a/cloudinit/settings.py b/cloudinit/settings.py
+index f2ca6585a..8e95f4a9c 100644
+--- a/cloudinit/settings.py
++++ b/cloudinit/settings.py
+@@ -21,6 +21,7 @@ DEFAULT_RUN_DIR = "/run/cloud-init"
+ # What u get if no config is provided
+ CFG_BUILTIN = {
+     "datasource_list": [
++        "UCloud",
+         "NoCloud",
+         "ConfigDrive",
+         "LXD",
+diff --git a/cloudinit/sources/DataSourceUCloud.py b/cloudinit/sources/DataSourceUCloud.py
+new file mode 100644
+index 000000000..a4a8b2409
+--- /dev/null
++++ b/cloudinit/sources/DataSourceUCloud.py
+@@ -0,0 +1,330 @@
++# Author: CJey Hou <cjey.hou@ucloud.cn>
++#
++# This file is part of cloud-init. See LICENSE file for license information.
++
++import os
++import re
++import copy
++import time
++import logging
++
++from cloudinit import net as cloudnet
++from cloudinit import sources
++from cloudinit import atomic_helper
++from cloudinit import util
++from cloudinit import dmi
++from cloudinit.subp import subp
++from cloudinit import url_helper
++from cloudinit.net.ephemeral import EphemeralDHCPv4
++
++LOG = logging.getLogger(__name__)
++
++DSNAME            = "UCloud"
++MDURL             = "http://100.80.80.80"
++MDPATH_METADATA   = "/meta-data/v1.json"
++MDPATH_USERDATA   = "/user-data"
++MDPATH_VENDORDATA = "/vendor-data"
++MDCACHE_FILE      = "/usr/local/ucloud/.cache/metadata.json"
++RETRY_WAITSECOND  = 5
++
++# cloud.cfg:
++# datasource:
++#   {dsname}:
++BUILTIN_DS_CONFIG = {
++    'metadata_url': MDURL,
++    'infinite': True,
++    'retries': 10,
++    'timeout': 5
++}
++
++class DataSourceUCloud(sources.DataSource):
++    dsname = DSNAME # dsname.lower() => v1.cloud_name | v1.cloud-name
++
++    def __init__(self, sys_cfg, distro, paths):
++        sources.DataSource.__init__(self, sys_cfg, distro, paths)
++
++        self.ds_cfg = util.mergemanydict([
++            util.get_cfg_by_path(sys_cfg, ["datasource", DSNAME], {}),
++            BUILTIN_DS_CONFIG
++        ])
++        self.metadata_address = self.ds_cfg.get('metadata_url')
++
++        self.metadata = {}
++        self.userdata_raw = None
++        self.vendordata_raw = None
++        self.brandnew = _is_brandnew()
++        self._crawled_metadata = {}
++
++    def _get_data(self):
++        if not _on_ucloud():
++            return False;
++
++        LOG.info("Running on UCloud.")
++
++        md = self.read_metadata()
++        self.metadata['instance-id'] = md.get('instance-id') # uhost-xxxxxxxx
++        self.metadata['local-hostname'] = md.get('local-hostname')
++        self.metadata['public-ssh-keys'] = md.get('public-ssh-keys')
++        self.metadata['cloud-name'] = md.get('cloud-name', DSNAME.lower())
++        self.metadata['platform'] = md.get('platform', DSNAME.lower())
++        self.metadata['region'] = md.get('region')
++        self.metadata['availability-zone'] = md.get("availability-zone")
++
++        self.vendordata_raw = md.get('vendor-data', None)
++        self.userdata_raw = md.get('user-data', None)
++
++        return True
++
++    def read_metadata(self):
++        if self._crawled_metadata:
++            return self._crawled_metadata
++
++        handler = self._ifup()
++        self._crawled_metadata = self._read_metadata()
++        self._ifdown(handler)
++
++        return self._crawled_metadata
++
++    def _read_metadata(self):
++        try:
++            # metadata
++            mdata = self._read_md_server(MDPATH_METADATA)
++            mdata = util.load_json(mdata.decode("utf-8"))
++            # vendordata
++            vdata = self._read_md_server(MDPATH_VENDORDATA)
++            mdata['vendor-data'] = vdata
++            # userdata
++            udata = self._read_md_server(MDPATH_USERDATA)
++            mdata['user-data'] = udata
++            # cache
++            _write_to_local(mdata)
++        except Exception as e:
++            if self.brandnew:
++                LOG.error("Access Metadata Server of UCloud fail, and cannot fallback")
++                raise e
++            mdata = _read_from_local()
++            LOG.warn("Access Metadata Server of UCloud fail, but rollback with local cached metadata")
++
++        return mdata
++
++    def _read_md_server(self, path):
++        mdurl    = self.metadata_address + path
++        timeout  = self.ds_cfg.get('timeout')
++        retries  = self.ds_cfg.get('retries')
++        infinite = self.ds_cfg.get('infinite') if self.brandnew else False
++
++        dist = util.get_linux_distro()
++        headers = {
++            'Distro-Name': dist[0],
++            'Distro-Version': dist[1],
++            'Distro-Flavor': dist[2],
++            'UCloud-Magic': '9da657f8-27c3-4505-8934-1d7152477436'
++        }
++
++        response = url_helper.readurl(
++            mdurl, headers=headers, timeout=timeout,
++            infinite=infinite, retries=retries,
++            sec_between=RETRY_WAITSECOND
++        )
++        if not response.ok():
++            raise RuntimeError("unable to read metadata server at %s" % mdurl)
++
++        return response.contents
++
++    def _ifup(self):
++        while True:
++            iface = find_fallback_nic()
++            if iface != None:
++                break
++            LOG.error("Fallback NIC at UCloud not found, waiting for next retry")
++            time.sleep(5)
++        iface = the_nice_nic(iface)
++        handler = EphemeralDHCPv4(self.distro, iface)
++        while True:
++            try:
++                handler.__enter__()
++            except Exception as e:
++                handler.__exit__(None, None, None)
++                if self.brandnew:
++                    LOG.error("DHCP at UCloud fail %s, waiting for next retry", e)
++                    time.sleep(5)
++                    continue
++                mdata = _read_from_local()
++                LOG.warn("DHCP at UCloud fail %s, but rollback with local cached metadata", e)
++                eths = mdata.get('network-config').get('ethernets')
++                eth = next(iter(eths.values()))
++                mac = eth.get('match').get('macaddress')
++                iface = cloudnet.get_interfaces_by_mac()[mac]
++                iface = the_nice_nic(iface)
++                gw4 = eth.get('gateway4')
++                for address in eth.get('addresses'):
++                    ipv4, prefix = address.split('/')
++                    if ':' not in ipv4:
++                        break
++                handler = cloudnet.EphemeralIPv4Network(iface, ipv4, prefix, '0.0.0.0',
++                            static_routes=[("0.0.0.0/0", gw4)])
++                handler.__enter__()
++            break
++        subp(['ip', '-family', 'inet', 'link', 'set', 'dev', iface, 'mtu', '1400'], capture=True)
++        return handler
++
++    def _ifdown(self, handler):
++        handler.__exit__(None, None, None)
++
++    @property
++    def network_config(self):
++        """Configure the networking. This needs to be done each boot, since
++           the IP information may have changed due to snapshot and/or
++           migration.
++        """
++
++        _ncfg = self._crawled_metadata.get('network-config', {})
++        ncfg = copy.deepcopy(_ncfg)
++        if ncfg.get('version', 0) == 2:
++            macs_to_nics = cloudnet.get_interfaces_by_mac()
++            for _, eth in ncfg.get('ethernets', {}).items():
++                mac = eth.get('match', {}).get('macaddress', '')
++                if mac in macs_to_nics and 'set-name' not in eth:
++                    eth['set-name'] = the_nice_nic(macs_to_nics[mac])
++                gw6 = eth.get('gateway6', '').lower()
++                if gw6.startswith('fe80:') and gw6.count('%') == 0:
++                    eth['gateway6'] = gw6 + '%' + eth['set-name']
++
++        return ncfg
++
++    @property
++    def platform_type(self):
++        return self.metadata.get('platform')
++
++    def get_public_ssh_keys(self):
++        return sources.normalize_pubkey_data(self.metadata.get('public-ssh-keys'))
++
++def find_fallback_nic():
++    iface = cloudnet.find_fallback_nic()
++    if iface == None:
++        for i in range(50):
++            time.sleep(0.1)  # wait driver load
++            iface = cloudnet.find_fallback_nic()
++            if iface != None:
++                break
++    return iface
++
++def the_nice_nic(iface):
++    mac = cloudnet.get_interface_mac(iface)
++    ifaces = []
++    for iface in cloudnet.get_devicelist():
++        if cloudnet.get_interface_mac(iface) == mac:
++            ifaces.append(iface)
++    if len(ifaces) == 1:
++        return ifaces[0]
++    # more cards use the same mac, choose one
++    ifaces.sort()
++    drivers = {}
++    for iface in ifaces:
++        drivers[iface] = get_iface_driver(iface)
++        if drivers[iface] == "net_failover": # first class
++            return iface
++    for iface in ifaces:
++        if drivers[iface] == "virtio_net": # second class
++            return iface
++    return ifaces[0]  # last class
++
++def get_iface_driver(iface):
++    try:
++        output = subp(['ethtool', '-i', iface], capture=True)[0]
++    except Exception as err:
++        LOG.warning("ethtool get iface %s fail:%s", iface, err)
++        return None
++    for line in output.splitlines():
++        fields = line.split(":")
++        if fields[0].strip() == "driver":
++            if len(fields) > 1:
++                return fields[1].strip()
++            return ""
++    return None
++
++def _on_ucloud():
++    if util.is_container():
++        return False
++
++    # dmidecode --string system-manufacturer
++    # Mostly, /sys/class/dmi/id/sys_vendor
++    if dmi.read_dmi_data('system-manufacturer') == DSNAME:
++        return True
++
++    # UPHost Asset Tag: UCloud SerVer {01|02}, 默认刷入baseboard-asset-tag/chassis-asset-tag, 做兼容处理
++    asset = dmi.read_dmi_data('baseboard-asset-tag')
++    if asset and re.search(r'^UCSV0[1|2]', asset):
++        return True
++
++    asset = dmi.read_dmi_data('chassis-asset-tag')
++    if asset and re.search(r'^UCSV0[1|2]', asset):
++        return True
++
++    # compatible mode
++    for _, _, files in os.walk('/dev/disk/by-id/'):
++        for name in files:
++            if re.search(r'\bUCLOUD', name):
++                return True
++    # UPHOST OEM String
++    oemstring = os.popen("dmidecode --type 11 2>/dev/null").read()
++    if re.search(r'\bUcloud', oemstring):
++        return True
++    # UPHOST Asset Tag: so old
++    if asset and re.search(r'^CDN20160701hw'):
++        return True
++
++    return False
++
++def _is_brandnew():
++    mdata = _read_from_local()
++    if 'network-config' not in mdata:
++        return True
++    ncfg = mdata.get('network-config', {})
++    if ncfg.get('version', 0) != 2:
++        return True
++
++    matched = 0
++    macs_to_nics = cloudnet.get_interfaces_by_mac()
++    eths = ncfg.get('ethernets', {}).items()
++    for _, eth in eths:
++        mac = eth.get('match', {}).get('macaddress', '')
++        if mac in macs_to_nics:
++            matched += 1
++
++    return not (matched == len(eths) and matched >= 1)
++
++def _write_to_local(data):
++    try:
++        data = copy.deepcopy(data)
++        data['vendor-data'] = atomic_helper.b64e(data.get('vendor-data', ''))
++        data['user-data'] = atomic_helper.b64e(data.get('user-data', ''))
++        util.write_file(MDCACHE_FILE, atomic_helper.json_dumps(data), mode=0o600, omode="w")
++    except Exception as e:
++        LOG.warn("Write cache of UCloud's metadata to local fail, %s", str(e))
++
++def _read_from_local():
++    if not os.path.exists(MDCACHE_FILE):
++        return {}
++
++    try:
++        response = url_helper.read_file_or_url(MDCACHE_FILE)
++        if response.ok():
++            data = util.load_json(response.contents)
++            if type(data) == dict:
++                data['vendor-data'] = atomic_helper.b64d(data.get('vendor-data', ''))
++                data['user-data'] = atomic_helper.b64d(data.get('user-data', ''))
++                return data
++    except Exception as e:
++        LOG.warn("Read local cache of UCloud's metadata fail, %s", str(e))
++
++    return {}
++
++# Used to match classes to dependencies
++datasources = [
++    (DataSourceUCloud, (sources.DEP_FILESYSTEM, )),
++]
++
++# Return a list of data sources that match this set of dependencies
++def get_datasource_list(depends):
++    return sources.list_from_depends(depends, datasources)

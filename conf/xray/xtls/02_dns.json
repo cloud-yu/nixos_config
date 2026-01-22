@@ -1,0 +1,27 @@
+{
+  "dns": {
+    "hosts": {
+      "dns.google": "8.8.8.8",
+      "dns.pub": "119.29.29.29",
+      "dns.alidns.com": "223.5.5.5",
+	    "geosite:category-ads-all": "127.0.0.1"
+  	},
+    "servers": [
+      {
+        "address": "https://dns.google/dns-query",
+        "domains": ["geosite:geolocation-!cn", "geosite:google@cn"]
+      },
+      {
+        "address": "https://dns.pub/dns-query",
+        "domains": ["geosite:cn"],
+        "expectIPs": ["geoip:cn"],
+        "skipFallback": true
+      },
+      "1.1.1.1",
+      "8.8.8.8"
+    ],
+    "disableFallback": false,
+    "disableFallbackIfMatch": false,
+    "tag": "dns_inbound"
+  }
+}

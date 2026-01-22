@@ -1,0 +1,39 @@
+{
+  "routing": {
+    "domainStrategy": "IPIfNonMatch",
+    "rules": [
+      {
+        "type": "field",
+        "domain": ["geosite:gfw"],
+        "outboundTag": "direct",
+        "ruleTag": "gfw"
+      },
+      {
+        "type": "field",
+        "domain": ["domain:googleapis.cn", "domain:gstatic.com"],
+        "outboundTag": "direct",
+        "ruleTag": "google-cn"
+      },
+      {
+        "type": "field",
+        "ip": ["geoip:private", "geoip:cn"],
+        "outboundTag": "blocked",
+        "ruleTag": "ip-blocked"
+      },
+      {
+        "type": "field",
+        "port": "53,853",
+        "network": "udp",
+        "inboundTag": ["reality","xtls_sth", "xtls_ws", "vmess_ws_tls", "vmess_quic"],
+        "outboundTag": "dns-out",
+        "ruleTag": "dns"
+      },
+      {
+        "type": "field",
+        "domain": ["geosite:cn"],
+        "outboundTag": "blocked",
+        "ruleTag": "domain-blocked"
+      }
+    ]
+  }
+}

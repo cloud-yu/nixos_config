@@ -1,0 +1,29 @@
+{
+  "inbounds": [
+  {
+    "port": 44326,
+    "protocol": "vmess",
+    "settings": {
+      "clients": [
+        {
+          "id": "mistery_vmess_quic_id"
+        }
+      ]
+    },
+    "tag": "vmess_quic",
+    "streamSettings": {
+      "network": "quic",
+      "quicSettings": {
+      },
+      "security": "tls",
+      "tlsSettings": {
+        "certificates": [
+          {
+            "certificateFile": "/etc/nginx/cert/lahd.ywings.top.cer",
+            "keyFile": "/etc/nginx/cert/lahd.ywings.top.key"
+          }
+        ]
+      }
+    }
+  }]
+}

@@ -1,0 +1,20 @@
+{
+  "outbounds": [
+    {
+      "protocol": "freedom",
+      "settings": {},
+	  "tag": "direct"
+    },
+    {
+      "protocol": "blackhole",
+      "settings": {
+        "type": "http"
+      },
+      "tag": "blocked"
+    },
+    {
+      "protocol": "dns",
+      "tag": "dns-out"
+    }
+  ]
+}

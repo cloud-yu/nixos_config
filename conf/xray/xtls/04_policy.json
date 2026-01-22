@@ -1,0 +1,13 @@
+{
+  "policy": {
+    "level": {
+      "0": {
+        "handshake": 10,
+        "conIdle": 300,
+        "uplinkOnly": 2,
+        "downlinkOnly": 2,
+        "bufferSize": 1024
+      }
+    }
+  }
+}

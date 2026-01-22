@@ -1,0 +1,27 @@
+{
+  "inbounds": [
+  {
+    "port": 44325,
+    "protocol": "vmess",
+    "settings": {
+      "clients": [
+        {
+          "id": "mistery_vmess_id"
+        }
+      ]
+    },
+    "tag": "vmess_ws_tls",
+    "streamSettings": {
+      "network": "ws",
+      "security": "tls",
+      "tlsSettings": {
+        "certificates": [
+          {
+            "certificateFile": "/etc/nginx/cert/lahd.ywings.top.cer",
+            "keyFile": "/etc/nginx/cert/lahd.ywings.top.key"
+          }
+        ]
+      }
+    }
+  }]
+}
