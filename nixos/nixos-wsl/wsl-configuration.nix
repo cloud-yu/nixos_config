@@ -4,5 +4,11 @@
     enable = true;
     wrapBinSh = false;
     defaultUser = "nixos";
+    wslConf = {
+      interop = {
+        enabled = false;
+        appendWindowsPath = false;
+      };
+    };
   };
 }
