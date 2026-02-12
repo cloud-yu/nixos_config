@@ -6,7 +6,7 @@
 }: {
   environment.systemPackages = lib.mkAfter (
     with pkgs; [
-      linux-manual
+      # linux-manual
       man-pages
       nh
     ]
