@@ -5,20 +5,21 @@
 }: {
   environment.systemPackages = lib.mkBefore (
     with pkgs; [
-      rsync
-      lsof
-      file
-      eza
-      ripgrep
       binutils
+      eza
+      file
+      gnupg
+      home-manager
       jq
       libarchive
-      wget
-      vim
-      zsh
-      tmux
+      lsof
       rclone
-      home-manager
+      ripgrep
+      rsync
+      tmux
+      vim
+      wget
+      zsh
     ]
   );
 
@@ -49,6 +50,14 @@
       core = {
         editor = "vim";
       };
+    };
+  };
+
+  programs.gnupg = {
+    agent = {
+      enable = true;
+      enableSSHSupport = true;
+      pinentryPackage = pkgs.pinentry-tty;
     };
   };
 }
