@@ -40,10 +40,10 @@
     nixos.enable = true;
   };
 
-  #nix.settings.substituters = [
-  #    "https://mirrors.tuna.tsinghua.edu.cn/nix-channels/store"
-  #    "https://mirrors.ustc.edu.cn/nix-channels/store"
-  #  ];
+  nix.settings.substituters = [
+    "https://mirrors.tuna.tsinghua.edu.cn/nix-channels/store"
+    "https://mirrors.ustc.edu.cn/nix-channels/store"
+  ];
 
   environment.etc = {
     # hostnamectl location read from /etc/machine-info, set location information
