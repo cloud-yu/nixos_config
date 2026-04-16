@@ -67,16 +67,13 @@
     ".npmrc" = {
       enable = true;
       text = ''
-        prefix=~/.npm_packages
+        prefix=~/.local
       '';
     };
     ".zlogin" = {
       enable = true;
       text = ''
         ulimit -c 4000000
-        if [ -d "''${HOME}/.npm_packages" ]; then
-          PATH="''${HOME}/.npm_packages/bin:''${PATH}"
-        fi
       '';
     };
   };

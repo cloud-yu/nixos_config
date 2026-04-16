@@ -17,6 +17,7 @@
       ripgrep
       rsync
       tmux
+      fzf
       vim
       wget
       zsh
