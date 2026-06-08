@@ -1,11 +1,11 @@
 {
   systemd.coredump = {
     enable = true;
-    extraConfig = ''
-      Storage=external
-      Compress=yes
-      ProcessMaxSize=4G
-    '';
+    settings.Coredump = {
+      Storage = "external";
+      Compress = "yes";
+      ProcessMaxSize = "4G";
+    };
   };
 
   security.pam.loginLimits = [

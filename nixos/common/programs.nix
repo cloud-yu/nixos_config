@@ -23,6 +23,7 @@
       vim
       wget
       zsh
+      fish
     ]
   );
 
@@ -63,4 +64,6 @@
       pinentryPackage = pkgs.pinentry-tty;
     };
   };
+
+  programs.fish.enable = true;
 }
