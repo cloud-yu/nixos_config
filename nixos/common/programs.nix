@@ -24,6 +24,7 @@
       wget
       zsh
       fish
+      delta
     ]
   );
 
@@ -53,6 +54,17 @@
       };
       core = {
         editor = "vim";
+        pager = "delta";
+      };
+      interactive = {
+        diffFilter = "delta --color-only";
+      };
+      delta = {
+        side-by-side = true;
+        navigate = true;
+        file-style = "yellow bold";
+        file-decoration-style = "blue ul";
+        syntax-theme = "OneHalfDark";
       };
     };
   };
