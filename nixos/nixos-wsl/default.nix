@@ -1,6 +1,9 @@
 # This is your system's configuration file.
 # Use this to configure your system environment (it replaces /etc/nixos/configuration.nix)
-{pkgs, ...}: {
+{
+  pkgs,
+  ...
+}: {
   # You can import other NixOS modules here
   imports = [
     # If you want to use modules your own flake exports (from modules/nixos):
@@ -50,18 +53,6 @@
     "machine-info".text = ''
       LOCATION=notebook
     '';
-  };
-
-  specialisation = {
-    lix = {
-      inheritParentConfig = true;
-
-      configuration = {
-        # use Lix instead of Nix
-        nix.package = pkgs.lixPackageSets.stable.lix;
-        environment.etc."specialisation".text = "lix";
-      };
-    };
   };
 
   # https://nixos.wiki/wiki/FAQ/When_do_I_update_stateVersion

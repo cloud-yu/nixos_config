@@ -73,6 +73,27 @@
       else if (self ? dirtyShortRev)
       then self.dirtyShortRev
       else "unknown";
+    # Common modules shared by the nixos-wsl and nixos-wsl-lix configurations.
+    # The lix variant adds ./nixos/nixos-wsl/lix.nix on top of these.
+    nixosWslCommonModules = [
+      nixos-wsl.nixosModules.wsl
+      nixos-cli.nixosModules.nixos-cli
+      ./nixos/nixos-wsl
+      home-manager.nixosModules.home-manager
+      {
+        # Force disable channel management here to override home-manager's default
+        nix.channel.enable = nixpkgs.lib.mkForce false;
+
+        home-manager.useGlobalPkgs = true;
+        home-manager.useUserPackages = true;
+        home-manager.users.nixos = {
+          imports = [
+            ./home-manager/nixos-wsl
+          ];
+          home.file.".nix-profile".enable = false;
+        };
+      }
+    ];
   in {
     debug = let
       traceMsg = ''
@@ -134,26 +155,20 @@
       nixos-wsl = nixpkgs.lib.nixosSystem {
         system = builtins.elemAt systems 0;
         specialArgs = {inherit confRev inputs outputs;};
-        modules = [
-          nixos-wsl.nixosModules.wsl
-          nixos-cli.nixosModules.nixos-cli
-          # > Our main nixos configuration file <
-          ./nixos/nixos-wsl
-          home-manager.nixosModules.home-manager
-          {
-            # Force disable channel management here to override home-manager's default
-            nix.channel.enable = nixpkgs.lib.mkForce false;
+        modules = nixosWslCommonModules;
+      };
 
-            home-manager.useGlobalPkgs = true;
-            home-manager.useUserPackages = true;
-            home-manager.users.nixos = {
-              imports = [
-                ./home-manager/nixos-wsl
-              ];
-              home.file.".nix-profile".enable = false;
-            };
-          }
-        ];
+      # Lix variant of nixos-wsl. Uses Lix instead of Nix as the nix
+      # implementation and adds zellij. Switch to it with:
+      #   sudo nixos-rebuild switch --flake .#nixos-wsl-lix
+      # Switch back to the Nix variant with:
+      #   sudo nixos-rebuild switch --flake .#nixos-wsl
+      nixos-wsl-lix = nixpkgs.lib.nixosSystem {
+        system = builtins.elemAt systems 0;
+        specialArgs = {inherit confRev inputs outputs;};
+        modules =
+          nixosWslCommonModules
+          ++ [./nixos/nixos-wsl/lix.nix];
       };
     };
 
