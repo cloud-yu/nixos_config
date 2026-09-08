@@ -1,6 +1,7 @@
 {
   pkgs,
   lib,
+  config,
   ...
 }: {
   # Configure your system-wide user settings (groups, etc), add more users as needed.
@@ -13,7 +14,7 @@
       # initialPassword = "correcthorsebatterystaple";
       isNormalUser = true;
       createHome = true;
-      hashedPassword = "***REMOVED***";
+      hashedPasswordFile = config.sops.secrets.mistery-hashed-password.path;
       openssh.authorizedKeys.keys = [
         ## Add your SSH public key(s) here, if you plan on using SSH to connect
         "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHy7BUvwtFBbOWuCIoJ6GUjEr4PzpQ0QJVFGeGA0kLzV personal@key"

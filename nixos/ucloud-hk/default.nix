@@ -20,6 +20,7 @@
     ./acme.nix
     ./nginx.nix
     ./proxy-service.nix
+    ./secrets.nix
     ./programs.nix
 
     # Import your generated (nixos-generate-config) hardware configuration

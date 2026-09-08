@@ -35,6 +35,20 @@ in {
     argument = "${homedir}/nixos-config/conf/xray/xtls";
   };
 
+  # REALITY 配置由 sops-nix 渲染（含私钥/UUID），以强制符号链接注入 confdir
+  systemd.tmpfiles.settings."xray@xtls-secret"."/etc/xray/xtls/055_reality.json"."L+" = {
+    user = "xray";
+    group = "proxy";
+    argument = config.sops.templates."055_reality.json".path;
+  };
+
+  # 清理历史遗留的明文密钥副本（迁移前由 C+ 拷贝生成，源文件已从仓库删除）
+  systemd.tmpfiles.settings."99-cleanup-legacy-secrets" = {
+    "/etc/xray/xtls/050_xtls_to_sth.json.disabled"."R" = {};
+    "/etc/xray/xtls/051_ss_inbounds.json.disabled"."R" = {};
+    "/etc/xray/xtls/054_xtls_kcp.json.disabled"."R" = {};
+  };
+
   users.users."xray" = {
     group = "proxy";
     home = "/etc/xray";
@@ -101,11 +115,10 @@ in {
     };
   };
 
-  systemd.tmpfiles.settings."hysteria-server@config"."/etc/hysteria/config.yaml"."C+" = {
+  systemd.tmpfiles.settings."hysteria-server@config"."/etc/hysteria/config.yaml"."L+" = {
     user = "hysteria";
     group = "proxy";
-    mode = "0640";
-    argument = "${homedir}/nixos-config/conf/hysteria/config.yaml";
+    argument = config.sops.templates."hysteria-config.yaml".path;
   };
 
   users.users.hysteria = {
