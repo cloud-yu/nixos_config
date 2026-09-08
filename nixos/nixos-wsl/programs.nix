@@ -18,6 +18,6 @@
       enable = true;
       extraArgs = "--keep-since 7d --keep 5";
     };
-    flake = "${config.users.users.nixos.home}/nixos-config";
+    flake = "${config.users.users.nixos.home}/repo/nixos-config";
   };
 }
