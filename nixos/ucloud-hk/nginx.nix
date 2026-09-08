@@ -1,4 +1,8 @@
-{pkgs, ...}: {
+{
+  pkgs,
+  config,
+  ...
+}: {
   services.nginx = {
     package = pkgs.unstable.nginx;
     enable = true;
@@ -92,23 +96,13 @@
           ssl_session_tickets on;
 
           index index.html index.htm index.nginx-debian.html;
+
+          # xhttp 分流 location（秘密路径）由 sops-nix 渲染注入
+          include ${config.sops.templates."nginx-xhttp-location.conf".path};
         '';
         locations = {
           "/" = {
             tryFiles = "$uri $uri/ =404";
-          };
-          "/***REMOVED***" = {
-            proxyPass = "http://127.0.0.1:8443";
-            extraConfig = ''
-              client_max_body_size 0;
-              client_body_timeout 5m;
-              grpc_set_header X-Real-IP $remote_addr;
-              grpc_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-              grpc_set_header Host $host;
-              grpc_read_timeout 315;
-              grpc_send_timeout 5m;
-              grpc_pass unix:/run/socks/xrxh.sock;
-            '';
           };
           "/openai/" = let
             openai_pass = "api.openai.com";

@@ -187,4 +187,25 @@
           - direct(all)
     '';
   };
+
+  # nginx 侧 xhttp 分流 location（秘密路径与 xray 共用同一 secret）
+  # 渲染路径: /run/secrets/rendered/nginx-xhttp-location.conf
+  sops.templates."nginx-xhttp-location.conf" = {
+    owner = "nginx";
+    mode = "0440";
+    reloadUnits = ["nginx.service"];
+    content = ''
+      location ${config.sops.placeholder.xray-xhttp-path} {
+        proxy_pass http://127.0.0.1:8443;
+        client_max_body_size 0;
+        client_body_timeout 5m;
+        grpc_set_header X-Real-IP $remote_addr;
+        grpc_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        grpc_set_header Host $host;
+        grpc_read_timeout 315;
+        grpc_send_timeout 5m;
+        grpc_pass unix:/run/socks/xrxh.sock;
+      }
+    '';
+  };
 }
