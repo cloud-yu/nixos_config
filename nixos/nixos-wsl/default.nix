@@ -1,9 +1,6 @@
 # This is your system's configuration file.
 # Use this to configure your system environment (it replaces /etc/nixos/configuration.nix)
-{
-  pkgs,
-  ...
-}: {
+{pkgs, ...}: {
   # You can import other NixOS modules here
   imports = [
     # If you want to use modules your own flake exports (from modules/nixos):
@@ -19,6 +16,7 @@
     ../common/programs.nix
     ../common/kernel.nix
     ./users.nix
+    ./secrets.nix
     ./programs.nix
     ./mount.nix
     ./wsl-configuration.nix
@@ -36,7 +34,7 @@
   documentation = {
     enable = true;
     man.enable = true;
-    man.generateCaches = false;
+    man.cache.enable = false;
     dev.enable = true;
     doc.enable = true;
     info.enable = true;
