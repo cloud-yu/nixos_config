@@ -16,7 +16,8 @@
       rclone
       ripgrep
       rsync
-      tmux
+      unstable.tmux
+      unstable.zellij
       fd
       fzf
       zoxide
