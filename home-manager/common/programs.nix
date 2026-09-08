@@ -34,39 +34,37 @@
   programs.ssh = {
     enable = true;
     enableDefaultConfig = false;
-    matchBlocks = {
+    # 块的属性名即 Host 匹配模式；值为 OpenSSH 原生指令名（ssh_config(5)）
+    settings = {
       "lahd" = {
-        hostname = "lahd.ywings.top";
-        user = "mistery";
-        port = 8022;
-        forwardAgent = false;
+        HostName = "lahd.ywings.top";
+        User = "mistery";
+        Port = 8022;
+        ForwardAgent = false;
       };
-      "bwh-jp" = {
-        host = "bwh";
-        hostname = "www.ywings.top";
-        user = "mistery";
-        port = 8022;
-        forwardAgent = false;
+      "bwh" = {
+        HostName = "www.ywings.top";
+        User = "mistery";
+        Port = 8022;
+        ForwardAgent = false;
       };
-      "nixos-hk" = {
-        host = "hk";
-        hostname = "hk.ywings.top";
-        user = "mistery";
-        port = 8022;
-        forwardAgent = false;
+      "hk" = {
+        HostName = "hk.ywings.top";
+        User = "mistery";
+        Port = 8022;
+        ForwardAgent = false;
       };
-      "default" = {
-        host = "*";
-        addKeysToAgent = "no";
-        compression = false;
-        controlMaster = "no";
-        controlPath = "~/.ssh/master-%r@%h:%p";
-        controlPersist = "no";
-        forwardAgent = false;
-        hashKnownHosts = false;
-        serverAliveCountMax = 3;
-        serverAliveInterval = 0;
-        userKnownHostsFile = "~/.ssh/known_hosts";
+      "*" = {
+        AddKeysToAgent = "no";
+        Compression = false;
+        ControlMaster = "no";
+        ControlPath = "~/.ssh/master-%r@%h:%p";
+        ControlPersist = "no";
+        ForwardAgent = false;
+        HashKnownHosts = false;
+        ServerAliveCountMax = 3;
+        ServerAliveInterval = 0;
+        UserKnownHostsFile = "~/.ssh/known_hosts";
       };
     };
   };
