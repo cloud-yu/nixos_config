@@ -1,0 +1,15 @@
+keys:
+  - &admin age1tc5ahal0fmgraunnzy0t8ad8ttj42r4rp7gf8v0ef346t683kyuq2g6l6v
+  - &host_ucloud age1nz6z6fz78km7eapc0zf2pd85g45r5ygfpjhvz76xrq7yxq3qzsnshd2xug
+  - &host_wsl age10vrmhaw456k6t2y3w7cle4hvkef4qzcwh20njjvvngwhxq5svd7qncqlar
+creation_rules:
+  - path_regex: secrets/ucloud-hk/[^/]+$
+    key_groups:
+    - age:
+      - *admin
+      - *host_ucloud
+  - path_regex: secrets/nixos-wsl/[^/]+$
+    key_groups:
+    - age:
+      - *admin
+      - *host_wsl

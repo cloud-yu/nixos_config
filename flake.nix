@@ -39,6 +39,10 @@
     disko.inputs.nixpkgs.follows = "nixpkgs";
     nixos-facter-modules.url = "github:nix-community/nixos-facter-modules";
 
+    # sops-nix 密钥管理
+    sops-nix.url = "github:Mic92/sops-nix";
+    sops-nix.inputs.nixpkgs.follows = "nixpkgs";
+
     # pre-commit-hooks
     pre-commit-hooks.url = "github:cachix/git-hooks.nix";
     pre-commit-hooks.inputs.nixpkgs.follows = "nixpkgs";
@@ -53,6 +57,7 @@
     nixos-facter-modules,
     nixos-wsl,
     nixos-cli,
+    sops-nix,
     ...
   } @ inputs: let
     inherit (self) outputs;
@@ -78,6 +83,7 @@
     nixosWslCommonModules = [
       nixos-wsl.nixosModules.wsl
       nixos-cli.nixosModules.nixos-cli
+      sops-nix.nixosModules.sops
       ./nixos/nixos-wsl
       home-manager.nixosModules.home-manager
       {
@@ -145,6 +151,7 @@
         specialArgs = {inherit confRev inputs outputs;};
         modules = [
           # nixos-cli.nixosModules.nixos-cli
+          sops-nix.nixosModules.sops
           disko.nixosModules.disko
           # > Our main nixos configuration file <
           ./nixos/ucloud-hk
