@@ -35,7 +35,14 @@
   in {
     settings = {
       # Enable flakes and new 'nix' command
-      experimental-features = lib.mkDefault "nix-command flakes";
+      # configurable-impure-env: 允许通过 nix.settings.impure-env 向固定输出派生
+      # (FOD, 如 buildGoModule 的 goModules、fetchurl 等) 注入代理等环境变量
+      experimental-features = lib.mkDefault "nix-command flakes configurable-impure-env";
+      # FOD 构建环境的 Go 模块代理(仅对声明了 impureEnvVars 的派生生效, Nix 2.34+),
+      # buildGoModule 的 goModules 已声明透传 GOPROXY, 无需额外配置
+      impure-env = [
+        "GOPROXY=https://goproxy.cn,direct"
+      ];
       # Opinionated: disable global registry
       flake-registry = "";
       # Workaround for https://github.com/NixOS/nix/issues/9574
