@@ -28,6 +28,7 @@
     settings = {
       user.name = "mistery";
       user.email = "cloud2037@gmail.com";
+      credential.helper = "store --file ~/.config/git/credentials";
     };
   };
 
