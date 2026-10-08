@@ -19,6 +19,7 @@
     ./secrets.nix
     ./programs.nix
     ./mount.nix
+    ./coredump.nix
     ./wsl-configuration.nix
   ];
 
