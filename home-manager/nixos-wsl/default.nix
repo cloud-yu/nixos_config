@@ -18,7 +18,6 @@
     # ../common/nix.nix
     ../common/programs.nix
     ../common/development.nix
-    ./programs.nix
   ];
   # TODO: Set your username
   home = {
@@ -59,26 +58,16 @@
   #   enable = true;
   #   instances = [ "onedrive" "googledrive" ];
   # };
-  # https://nixos.wiki/wiki/FAQ/When_do_I_update_stateVersion
-  systemd.user.tmpfiles.rules = [
-    "d ${config.home.homeDirectory}/.npm_packages"
-  ];
-  home.file = {
-    ".npmrc" = {
-      enable = true;
-      text = ''
-        prefix=~/.local
-      '';
-    };
-    ".zlogin" = {
-      enable = true;
-      text = ''
-        ulimit -c 4000000
-      '';
+  programs.npm = {
+    enable = true;
+    settings = {
+      prefix = "${config.home.homeDirectory}/.local";
+      registry = "https://registry.npmmirror.com";
     };
   };
 
   home = {
+    # https://nixos.wiki/wiki/FAQ/When_do_I_update_stateVersion
     stateVersion = "24.11";
     ## Home Manager is only able to set session variables automatically if it manages you BAHS, Z shell
     ## or fish shell configuration.
