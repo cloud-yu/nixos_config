@@ -24,7 +24,7 @@
       vim
       wget
       zsh
-      fish
+      unstable.fish
       delta
     ]
   );
